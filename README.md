@@ -1,5 +1,7 @@
-# Medicdsdwal
+# Medical
 
+There is transcribe.py in the wavs folder change it accordingly based on training usage
+Audio clip are Tara from ElevenLabs
 
 # To run install the below commands
 
@@ -30,4 +32,6 @@ cd MeloTTS
 pip install -e .
 python -m unidic download
 ```
+
+Linux system is preferred
 
