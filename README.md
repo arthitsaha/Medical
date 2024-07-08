@@ -1,9 +1,9 @@
-# Medical
+# Medicdsdwal
 
 
-#To run install the below commands
+# To run install the below commands
 
-!pip install tokenizers
+!pip install tokenizers /n
 !pip install transformers
 !pip install accelerate
 !pip install llama-index
@@ -21,7 +21,7 @@
 
 
 
-#Text to speech 
+# Text to speech 
 
 git clone https://github.com/myshell-ai/MeloTTS.git
 cd MeloTTS
