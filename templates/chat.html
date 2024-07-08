@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IshaChat</title>
+    <style>
+        /* Global styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-image: url('https://asset.gecdesigns.com/img/wallpapers/beautiful-fantasy-wallpaper-ultra-hd-wallpaper-4k-sr10012418-1706506236698-cover.webp');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .chat-container {
+            width: 500px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease;
+            position: relative;
+        }
+
+        .chat-header {
+            background-color: #143a3b;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .chat-box {
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-message {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .chat-message.bot .avatar {
+            background-color: #e0e0e0;
+            color: #555;
+        }
+
+        .chat-message.user {
+            justify-content: flex-end;
+        }
+
+        .chat-message.user .avatar {
+            background-image: url('https://media.istockphoto.com/id/1188335495/vector/medical-friendly-android-robot-with-stethoscope-robot-doctor-concept.jpg?s=612x612&w=0&k=20&c=yZFUUGPDsXeySqMZSkp0AN1vMK8_yG01tAdK9CKIWP0=');
+            color: #e0e0e0;
+            margin-left: 10px;
+        }
+
+        .chat-message.bot .message {
+            background-color: #e0e0e0;
+            color: #333;
+            margin-left: 10px;
+        }
+
+        .chat-message.user .message {
+            background-color: #143a3b;
+            color: #fff;
+            margin-right: 10px;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .input-box {
+            display: flex;
+            padding: 10px;
+            background-color: #fff;
+            border-top: 1px solid #ddd;
+        }
+
+        .input-box input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .input-box input:focus {
+            border-color: #143a3b;
+        }
+
+        .input-box button {
+            background-color: #143a3b;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .input-box button:hover {
+            background-color: #0e2c2d;
+        }
+
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-left: 5px;
+        }
+
+        .icon-button img {
+            width: 20px;
+            height: 20px;
+        }
+
+        .previous-chats {
+            width: 250px;
+            background-color: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            position: absolute;
+            left: -250px;
+            top: 0;
+            bottom: 0;
+            transition: left 0.3s ease;
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        .previous-chats.open {
+            left: 0;
+        }
+
+        .previous-chats-header {
+            background-color: #143a3b;
+            color: white;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .previous-chats-list {
+            padding: 10px;
+        }
+
+        .chat-item {
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <button class="menu-button" onclick="togglePreviousChats()">☰</button>
+            Chatbot
+        </div>
+        <div class="chat-box" id="chat-box">
+            <div class="chat-message bot">
+                <div class="avatar">CB</div>
+                <div class="message">Hello, I am Isha your personal Medical Counsellor
+                    Please select the language to continue
+                    1. English
+                    2. Hindi
+                 </div>
+            </div>
+        </div>
+        <div class="input-box">
+            <input type="text" placeholder="Type your message here..." id="user-input" name="input" onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button class="icon-button" onclick="sendMessage()">
+                <img src="https://cdn-icons-png.freepik.com/512/5582/5582878.png" alt="Send"/>
+            </button>
+            <button class="icon-button" onclick="navigateToAudioPage()">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/microphone.png" alt="Mic"/>
+            </button>
+        </div>
+        <div class="previous-chats" id="previous-chats">
+            <div class="previous-chats-header">
+                Previous Chats
+                <button class="close-button" onclick="togglePreviousChats()">✖</button>
+            </div>
+            <div class="previous-chats-list" id="previous-chats-list">
+                <!-- Previous chats will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let firstMessage = true; // Flag to track the first message
+
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const chatBox = document.getElementById('chat-box');
+
+            if (userInput.value.trim() !== '') {
+                // Create user message
+                const userMessage = document.createElement('div');
+                userMessage.className = 'chat-message user';
+                userMessage.innerHTML = `<div class="message">${userInput.value}</div><div class="avatar">You</div>`;
+                chatBox.appendChild(userMessage);
+
+                const userMessageText = userInput.value;
+                userInput.value = '';
+
+                // Scroll to the bottom of the chat box
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Send user message to the server and get response
+                try {
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ input: userMessageText }),
+                    });
+
+                    const data = await response.json();
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'chat-message bot';
+                    botMessage.innerHTML = `<div class="avatar">CB</div><div class="message">${data.response}</div>`;
+                    chatBox.appendChild(botMessage);
+
+                    // Scroll to the bottom of the chat box
+                    chatBox.scrollTop = chatBox.scrollHeight;
+
+                    // If it's the first message, add the first five words to the previous chats list
+                    if (firstMessage) {
+                        addPreviousChat(data.first_five_words);
+                        firstMessage = false; // Set the flag to false after the first message
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            }
+        }
+
+        function addPreviousChat(firstFiveWords) {
+            const previousChatsList = document.getElementById('previous-chats-list');
+            const chatItem = document.createElement('button');
+            chatItem.className = 'chat-item';
+            chatItem.textContent = firstFiveWords;
+            chatItem.onclick = () => alert(`You clicked on: ${firstFiveWords}`);
+            previousChatsList.appendChild(chatItem);
+        }
+
+        function navigateToAudioPage() {
+            window.location.href = 'audio_to_text';
+        }
+
+        function togglePreviousChats() {
+            const previousChats = document.getElementById('previous-chats');
+            previousChats.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>

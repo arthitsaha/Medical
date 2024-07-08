@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio to Text</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+        }
+
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        button:disabled {
+            background: #ddd;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+
+        function startRecording() {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    mediaRecorder.start();
+                    document.getElementById("status").innerText = "Recording...";
+                    document.getElementById("startButton").disabled = true;
+                    document.getElementById("stopButton").disabled = false;
+                })
+                .catch(err => {
+                    console.error('Error accessing microphone', err);
+                    alert('Could not access microphone. Please check your browser settings.');
+                });
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                audioChunks = [];
+                convertAndSend(audioBlob);
+                document.getElementById("startButton").disabled = false;
+                document.getElementById("stopButton").disabled = true;
+            };
+        }
+
+        function convertAndSend(audioBlob) {
+            const reader = new FileReader();
+            reader.readAsArrayBuffer(audioBlob);
+            reader.onloadend = () => {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioContext.decodeAudioData(reader.result, (buffer) => {
+                    audioContext.close().then(() => {
+                        const wavBlob = bufferToWave(buffer, buffer.length);
+                        sendAudio(wavBlob);
+                    });
+                });
+            };
+        }
+
+        function bufferToWave(abuffer, len) {
+            let numOfChan = abuffer.numberOfChannels,
+                length = len * numOfChan * 2 + 44,
+                buffer = new ArrayBuffer(length),
+                view = new DataView(buffer),
+                channels = [], i, sample,
+                offset = 0,
+                pos = 0;
+
+            // write WAVE header
+            setUint32(0x46464952);                         // "RIFF"
+            setUint32(length - 8);                         // file length - 8
+            setUint32(0x45564157);                         // "WAVE"
+
+            setUint32(0x20746d66);                         // "fmt " chunk
+            setUint32(16);                                 // length = 16
+            setUint16(1);                                  // PCM (uncompressed)
+            setUint16(numOfChan);
+            setUint32(abuffer.sampleRate);
+            setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+            setUint16(numOfChan * 2);                      // block-align
+            setUint16(16);                                 // 16-bit (hardcoded in this demo)
+
+            setUint32(0x61746164);                         // "data" - chunk
+            setUint32(length - pos - 4);                   // chunk length
+
+            // write interleaved data
+            for (i = 0; i < abuffer.numberOfChannels; i++)
+                channels.push(abuffer.getChannelData(i));
+
+            while (pos < length) {
+                for (i = 0; i < numOfChan; i++) {             // interleave channels
+                    sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
+                    sample = (sample < 0? sample * 0x8000 : sample * 0x7FFF) | 0; // scale to 16-bit signed int
+                    view.setInt16(pos, sample, true);          // write 16-bit sample
+                    pos += 2;
+                }
+                offset++                                     // next source sample
+            }
+
+            return new Blob([buffer], { type: "audio/wav" });
+
+            function setUint16(data) {
+                view.setUint16(pos, data, true);
+                pos += 2;
+            }
+
+            function setUint32(data) {
+                view.setUint32(pos, data, true);
+                pos += 4;
+            }
+        }
+
+        function sendAudio(wavBlob) {
+            const formData = new FormData();
+            formData.append('file', wavBlob, 'audio.wav');
+
+            fetch('/audio', {
+                method: 'POST',
+                body: formData
+            })
+           .then(response => response.json())
+           .then(data => {
+                const audioElement = document.createElement('audio');
+                audioElement.src = `data:audio/mp3;base64,${data.audio}`;
+                audioElement.type = 'audio/mpeg';
+                audioElement.controls = true;
+                audioElement.autoplay = true;
+                document.getElementById("result").innerHTML = "Response: " + data.text;
+                document.getElementById("result").appendChild(audioElement);
+                document.getElementById("status").innerText = "Recording stopped";
+            })
+           .catch(err => {
+                console.error('Error sending audio data', err);
+                alert('Could not send audio data. Please try again.');
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Audio to Text</h1>
+        <p id="status">Press Start to record audio</p>
+        <button id="startButton" onclick="startRecording()">Start</button>
+        <button id="stopButton" onclick="stopRecording()" disabled>Stop</button>
+        <div id="result"></div>
+    </div>
+</body>
+</html>
