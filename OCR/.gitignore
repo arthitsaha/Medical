@@ -1,0 +1,11 @@
+*.pyc
+*.swp
+*.pkl
+*.pth
+result*
+weights*
+exxon_imgs*
+exxon_output*
+output*
+test_images*
+*.jpg
